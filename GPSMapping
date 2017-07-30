@@ -1,0 +1,58 @@
+import exifread
+from googleplaces import GooglePlaces, types, lang
+import requests
+import sys
+
+#exception
+try :
+	sys.argv[1]
+except IndexError : 
+	print "usage : python GPSMapping.jpy [filename]"
+	sys.exit();
+else : 
+	fn=sys.argv[1]
+print "this is a program for extracting GPS map from a image file"
+f = open(fn,'rb')
+
+#reading exif GPS data
+tags = exifread.process_file(f)
+result = tags.get('GPS GPSLatitude',0)
+if result :
+	lat=tags['GPS GPSLatitude']
+	lon=tags['GPS GPSLongitude']
+
+	#DMS->D
+	lat=str(lat)
+	lon=str(lon)
+	lat=lat[1:11] 
+	lon=lon[1:11]
+	lat=str(lat).split(',')
+	lon=str(lon).split(',')
+	latlist=map(float,lat)
+	lonlist=map(float,lon)
+
+	latD=latlist[0] + latlist[1]/60 + latlist[2]/3600
+	lonD=lonlist[0] + lonlist[1]/60 + lonlist[2]/3600
+
+	latD=round(latD,6)
+	lonD=round(lonD,6)
+
+
+#making url & send packet to server
+	url="http://maps.googleapis.com/maps/api/staticmap?zoom=13&size=1200x600&markers="+str(latD)+","+str(lonD)+"&key=AIzaSyAaxwZcqGEIpCZ_xXdKYMjLUKFLVxDV4A0"
+	r = requests.get(url)
+
+
+# print(r.status_code)
+# print(r.headers)
+
+# downloading PNG
+	pn=raw_input("put the name of PNG file:")
+	pngfile=r.content
+	picf=open(pn+".png","wb")
+	picf.write(pngfile)
+	print "successfully completed"
+else:
+	print "There is no EXIF GPS data in this image file."
+
+
